@@ -14,6 +14,7 @@ import org.apache.http.util.EntityUtils;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.json.simple.JSONArray;
 
 public class JavaApiStreaming {
     public static void main (String[]args) throws IOException {
@@ -26,10 +27,10 @@ public class JavaApiStreaming {
             String domain = "https://stream-fxpractice.oanda.com";
             String access_token = "ACCESS-TOKEN";
             String account_id = "1234567";
-            String instruments = "EUR_USD,USD_JPY,EUR_JPY";
+            String instruments = "EUR_USD,USD_HUF,EUR_HUF";
 
 
-            HttpUriRequest httpGet = new HttpGet(domain + "/v1/prices?accountId=" + account_id + "&instruments=" + instruments);
+            HttpUriRequest httpGet = new HttpGet(domain + "/v3/accounts/"+account_id+"/pricing/stream?instruments=" + instruments);
             httpGet.setHeader(new BasicHeader("Authorization", "Bearer " + access_token));
 
             System.out.println("Executing request: " + httpGet.getRequestLine());
@@ -54,17 +55,28 @@ public class JavaApiStreaming {
 
                     // ignore heartbeats
                     if (tick.containsKey("instrument")) {
-                        System.out.println("-------");
+                        System.out.println("-------------------");
 
                         String instrument = tick.get("instrument").toString();
                         String time = tick.get("time").toString();
-                        double bid = Double.parseDouble(tick.get("bid").toString());
-                        double ask = Double.parseDouble(tick.get("ask").toString());
 
-                        System.out.println(instrument);
-                        System.out.println(time);
-                        System.out.println(bid);
-                        System.out.println(ask);
+			JSONArray bids = (JSONArray) tick.get("bids");
+			JSONArray asks = (JSONArray) tick.get("asks");
+
+                        JSONObject bidJson = (JSONObject) bids.get(0);
+                        JSONObject askJson = (JSONObject) asks.get(0);
+
+			double bid = Double.parseDouble(bidJson.get("price").toString());
+			double ask = Double.parseDouble(askJson.get("price").toString());
+			
+			double spread = ask - bid;        
+			
+			System.out.println("Instrument: "+instrument);
+                        System.out.println("Time: "+time);
+                        System.out.println("Bid: "+bid);
+                        System.out.println("Ask: "+ask);
+			System.out.format("Spread: %.5f%n", spread);
+                        
                     }
                 }
             } else {
